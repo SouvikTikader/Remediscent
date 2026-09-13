@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">Dashboard</h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card text-bg-primary"><div class="card-body">
+    <div class="small">Total Medicines</div><div class="fs-3 fw-bold">{{ stats.total }}</div>
+  </div></div></div>
+  <div class="col-md-3"><div class="card text-bg-warning"><div class="card-body">
+    <div class="small">Expiring Soon</div><div class="fs-3 fw-bold">{{ stats.expiring_soon }}</div>
+  </div></div></div>
+  <div class="col-md-3"><div class="card text-bg-danger"><div class="card-body">
+    <div class="small">Expired</div><div class="fs-3 fw-bold">{{ stats.expired }}</div>
+  </div></div></div>
+  <div class="col-md-3"><div class="card text-bg-secondary"><div class="card-body">
+    <div class="small">Low / Out of Stock</div><div class="fs-3 fw-bold">{{ stats.low_stock }}</div>
+  </div></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between">
+        <strong>Medicine Status</strong>
+        <a href="{{ url_for('medicines') }}" class="small">View all →</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Name</th><th>Qty</th><th>Expiry</th><th>Stock</th></tr></thead>
+          <tbody>
+          {% for m in medicines[:8] %}
+            <tr>
+              <td>{{ m.name }}</td>
+              <td>{{ m.quantity }} {{ m.unit }}</td>
+              <td>
+                <span class="badge
+                  {% if m.expiry_status=='EXPIRED' %}bg-danger
+                  {% elif m.expiry_status=='EXPIRING SOON' %}bg-warning text-dark
+                  {% else %}bg-success{% endif %}">
+                  {{ m.expiry_status }}
+                </span>
+              </td>
+              <td>
+                <span class="badge
+                  {% if m.stock_status=='OUT OF STOCK' %}bg-danger
+                  {% elif m.stock_status=='LOW STOCK' %}bg-warning text-dark
+                  {% else %}bg-success{% endif %}">
+                  {{ m.stock_status }}
+                </span>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">
+              No medicines yet. <a href="{{ url_for('add_medicine') }}">Add one</a>.
+            </td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><strong>Unread Alerts</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for n in notifications %}
+          <li class="list-group-item">
+            <span class="badge bg-info text-dark me-2">{{ n.type }}</span>
+            {{ n.message }}
+            <div class="small text-muted">{{ n.created_at.strftime('%d %b %Y %H:%M') }}</div>
+          </li>
+        {% else %}
+          <li class="list-group-item text-muted">No unread alerts.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

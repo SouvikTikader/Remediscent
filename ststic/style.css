@@ -1,0 +1,4 @@
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.card { border: none; }
+.navbar-brand { font-size: 1.25rem; }
+.table th { font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; color: #6c757d; }

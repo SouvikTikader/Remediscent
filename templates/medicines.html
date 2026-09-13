@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Medicines</h2>
+  <a class="btn btn-primary" href="{{ url_for('add_medicine') }}">+ Add Medicine</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Name</th><th>Member</th><th>Qty</th><th>Expiry</th>
+          <th>Stock</th><th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for m in medicines %}
+        <tr>
+          <td>
+            <strong>{{ m.name }}</strong>
+            {% if m.generic_name %}<div class="small text-muted">{{ m.generic_name }}</div>{% endif %}
+          </td>
+          <td>{{ m.member.name }}</td>
+          <td>{{ m.quantity }} {{ m.unit }}</td>
+          <td>
+            {% if m.expiry_date %}
+              {{ m.expiry_date.strftime('%d %b %Y') }}
+              <div class="small text-muted">{{ m.days_to_expiry }} days</div>
+            {% else %}—{% endif %}
+            <span class="badge
+              {% if m.expiry_status=='EXPIRED' %}bg-danger
+              {% elif m.expiry_status=='EXPIRING SOON' %}bg-warning text-dark
+              {% else %}bg-success{% endif %}">{{ m.expiry_status }}</span>
+          </td>
+          <td>
+            <span class="badge
+              {% if m.stock_status=='OUT OF STOCK' %}bg-danger
+              {% elif m.stock_status=='LOW STOCK' %}bg-warning text-dark
+              {% else %}bg-success{% endif %}">{{ m.stock_status }}</span>
+          </td>
+          <td class="text-end">
+            <form method="POST" action="{{ url_for('consume_medicine', mid=m.id) }}" class="d-inline">
+              <input type="number" name="quantity" value="1" min="1" style="width:60px" class="form-control form-control-sm d-inline">
+              <button class="btn btn-sm btn-outline-primary">Consume</button>
+            </form>
+            <form method="POST" action="{{ url_for('predict', mid=m.id) }}" class="d-inline">
+              <button class="btn btn-sm btn-outline-info">Predict</button>
+            </form>
+            <form method="POST" action="{{ url_for('delete_medicine', mid=m.id) }}" class="d-inline"
+                  onsubmit="return confirm('Delete this medicine?')">
+              <button class="btn btn-sm btn-outline-danger">✕</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">
+          No medicines yet. <a href="{{ url_for('add_medicine') }}">Add one</a>.
+        </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
