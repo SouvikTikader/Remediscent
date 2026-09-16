@@ -1,126 +1,174 @@
 {% extends 'base.html' %}
-{% block content %}
-<h2 class="mb-4">Dashboard</h2>
+{% block title %}Dashboard · Remediscent{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 
-<div class="row g-3 mb-4">
-  <div class="col-md-3"><div class="card text-bg-primary"><div class="card-body">
-    <div class="small">Total Medicines</div><div class="fs-3 fw-bold">{{ stats.total }}</div>
-  </div></div></div>
-  <div class="col-md-3"><div class="card text-bg-warning"><div class="card-body">
-    <div class="small">Expiring Soon</div><div class="fs-3 fw-bold">{{ stats.expiring_soon }}</div>
-  </div></div></div>
-  <div class="col-md-3"><div class="card text-bg-danger"><div class="card-body">
-    <div class="small">Expired</div><div class="fs-3 fw-bold">{{ stats.expired }}</div>
-  </div></div></div>
-  <div class="col-md-3"><div class="card text-bg-secondary"><div class="card-body">
-    <div class="small">Low Stock</div><div class="fs-3 fw-bold">{{ stats.low_stock }}</div>
-  </div></div></div>
+{% block topbar_actions %}
+  <a href="{{ url_for('add_medicine') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg"></i> Add Medicine
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- STAT CARDS -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="bi bi-capsule"></i></div>
+    <div>
+      <div class="stat-label">Total Medicines</div>
+      <div class="stat-value">{{ stats.total }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber"><i class="bi bi-hourglass-split"></i></div>
+    <div>
+      <div class="stat-label">Expiring Soon</div>
+      <div class="stat-value">{{ stats.expiring_soon }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="bi bi-x-octagon"></i></div>
+    <div>
+      <div class="stat-label">Expired</div>
+      <div class="stat-value">{{ stats.expired }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon slate"><i class="bi bi-exclamation-diamond"></i></div>
+    <div>
+      <div class="stat-label">Low Stock</div>
+      <div class="stat-value">{{ stats.low_stock }}</div>
+    </div>
+  </div>
 </div>
 
 <div class="row g-4">
-  <!-- Safety findings -->
-  <div class="col-md-6">
-    <div class="card shadow-sm border-danger">
-      <div class="card-header bg-danger text-white">
-        <strong>⚠ Safety Alerts — Drug Interactions</strong>
+  <!-- SAFETY ALERTS -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-shield-exclamation text-danger me-2"></i>Safety Alerts</span>
+        <span class="badge bg-secondary">{{ safety_findings|length }}</span>
       </div>
       <ul class="list-group list-group-flush">
         {% for f in safety_findings %}
           <li class="list-group-item">
-            <span class="badge
-              {% if f.severity=='HIGH' %}bg-danger
-              {% elif f.severity=='MODERATE' %}bg-warning text-dark
-              {% else %}bg-secondary{% endif %}">{{ f.severity }}</span>
-            <strong class="ms-2">{{ f.a }}</strong> + <strong>{{ f.b }}</strong>
-            <div class="small text-muted">{{ f.description }}</div>
-            <div class="small">Member: {{ f.member }}</div>
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="badge
+                  {% if f.severity=='HIGH' %}bg-danger
+                  {% elif f.severity=='MODERATE' %}bg-warning
+                  {% else %}bg-secondary{% endif %}">{{ f.severity }}</span>
+                <strong class="ms-2">{{ f.a }}</strong>
+                <i class="bi bi-plus text-muted mx-1"></i>
+                <strong>{{ f.b }}</strong>
+              </div>
+              <small class="text-muted">{{ f.member }}</small>
+            </div>
+            <div class="small text-muted mt-1">{{ f.description }}</div>
           </li>
         {% else %}
-          <li class="list-group-item text-success">✓ No known interactions detected.</li>
+          <li class="list-group-item text-center py-4">
+            <i class="bi bi-check-circle text-success fs-4 d-block mb-1"></i>
+            <span class="text-muted">No interactions detected</span>
+          </li>
         {% endfor %}
       </ul>
     </div>
   </div>
 
-  <!-- Refill optimizer -->
-  <div class="col-md-6">
-    <div class="card shadow-sm border-warning">
-      <div class="card-header bg-warning text-dark">
-        <strong>🛒 Refill Plan (next 14 days)</strong>
+  <!-- REFILL PLAN -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-cart-check text-warning me-2"></i>Refill Plan</span>
+        <small class="text-muted">next 14 days</small>
       </div>
       <div class="card-body">
         {% if refill.groups %}
           {% for label, items in refill.groups.items() %}
-            <h6 class="mt-2">{{ label }}</h6>
-            <ul class="list-group mb-2">
+            <div class="section-title">{{ label }}</div>
+            <ul class="list-group mb-3">
               {% for it in items %}
-                <li class="list-group-item d-flex justify-content-between">
-                  <span>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
                     <span class="badge
                       {% if it.urgency=='CRITICAL' %}bg-danger
-                      {% elif it.urgency=='HIGH' %}bg-warning text-dark
-                      {% else %}bg-info text-dark{% endif %}">{{ it.urgency }}</span>
-                    {{ it.medicine }} <small class="text-muted">({{ it.member }})</small>
-                  </span>
-                  <span class="small">{{ it.days_left }}d left</span>
+                      {% elif it.urgency=='HIGH' %}bg-warning
+                      {% else %}bg-info{% endif %}">{{ it.urgency }}</span>
+                    <strong class="ms-2">{{ it.medicine }}</strong>
+                    <small class="text-muted">· {{ it.member }}</small>
+                  </div>
+                  <small class="text-muted">{{ it.days_left }}d left</small>
                 </li>
               {% endfor %}
             </ul>
           {% endfor %}
-          <div class="small text-muted">Suggested trips: {{ refill.total_trips }}</div>
+          <div class="text-muted small">
+            <i class="bi bi-info-circle"></i> Suggested shopping trips: {{ refill.total_trips }}
+          </div>
         {% else %}
-          <p class="text-success mb-0">✓ No refills needed in next 14 days.</p>
+          <div class="empty-state">
+            <i class="bi bi-check-circle"></i>
+            No refills needed in the next 14 days
+          </div>
         {% endif %}
       </div>
     </div>
   </div>
 
-  <!-- Adherence -->
-  <div class="col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-header"><strong>📊 Adherence (lowest first)</strong></div>
+  <!-- ADHERENCE -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-graph-up-arrow text-primary me-2"></i>Adherence</span>
+        <small class="text-muted">lowest first</small>
+      </div>
       <ul class="list-group list-group-flush">
         {% for a in adherence_rows %}
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>{{ a.medicine }} <small class="text-muted">({{ a.member }})</small></span>
-            <span>
+            <div>
+              <strong>{{ a.medicine }}</strong>
+              <small class="text-muted">· {{ a.member }}</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
               <span class="badge
                 {% if a.label=='Excellent' %}bg-success
-                {% elif a.label=='Good' %}bg-info text-dark
-                {% elif a.label=='Poor' %}bg-warning text-dark
+                {% elif a.label=='Good' %}bg-info
+                {% elif a.label=='Poor' %}bg-warning
                 {% else %}bg-danger{% endif %}">{{ a.label }}</span>
-              {{ (a.rate * 100) | round(0) }}%
-            </span>
+              <span class="fw-bold">{{ (a.rate * 100) | round(0) }}%</span>
+            </div>
           </li>
         {% else %}
-          <li class="list-group-item text-muted">Not enough data yet.</li>
+          <li class="list-group-item text-muted text-center py-4">Not enough data yet</li>
         {% endfor %}
       </ul>
     </div>
   </div>
 
-  <!-- Medicines quick view -->
-  <div class="col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-header d-flex justify-content-between">
-        <strong>Medicine Status</strong>
-        <a href="{{ url_for('medicines') }}" class="small">View all →</a>
+  <!-- MEDICINES -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-capsule text-primary me-2"></i>Medicine Status</span>
+        <a href="{{ url_for('medicines') }}" class="small text-decoration-none">View all →</a>
       </div>
-      <table class="table mb-0">
+      <table class="table">
         <thead><tr><th>Name</th><th>Qty</th><th>Expiry</th></tr></thead>
         <tbody>
         {% for m in medicines[:6] %}
           <tr>
-            <td><a href="{{ url_for('medicine_detail', mid=m.id) }}">{{ m.name }}</a></td>
+            <td><a href="{{ url_for('medicine_detail', mid=m.id) }}" class="text-decoration-none fw-semibold">{{ m.name }}</a></td>
             <td>{{ m.quantity }} {{ m.unit }}</td>
             <td><span class="badge
               {% if m.expiry_status=='EXPIRED' %}bg-danger
-              {% elif m.expiry_status=='EXPIRING SOON' %}bg-warning text-dark
+              {% elif m.expiry_status=='EXPIRING SOON' %}bg-warning
               {% else %}bg-success{% endif %}">{{ m.expiry_status }}</span></td>
           </tr>
         {% else %}
           <tr><td colspan="3" class="text-center text-muted py-4">
-            No medicines. <a href="{{ url_for('add_medicine') }}">Add one</a>.
+            No medicines yet. <a href="{{ url_for('add_medicine') }}">Add one</a>
           </td></tr>
         {% endfor %}
         </tbody>
@@ -128,4 +176,5 @@
     </div>
   </div>
 </div>
+
 {% endblock %}

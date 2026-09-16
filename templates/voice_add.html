@@ -1,69 +1,342 @@
 {% extends 'base.html' %}
-{% block content %}
-<h2>🎤 Voice-Add Medicine</h2>
-<p class="text-muted">Click the mic and speak, e.g.: <em>"Paracetamol 500 milligram, quantity 20, expires 2026-12-31"</em></p>
+{% block title %}Voice Entry · Remediscent{% endblock %}
+{% block page_title %}Voice Entry{% endblock %}
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <button id="mic" class="btn btn-danger mb-3">🎤 Start Listening</button>
-    <div id="transcript" class="border rounded p-3 bg-light mb-3" style="min-height:60px;">
-      <em class="text-muted">Transcript will appear here…</em>
+{% block topbar_actions %}
+  <a href="{{ url_for('add_medicine') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-keyboard"></i> Type Instead
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+  <!-- MIC PANEL -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-body text-center py-5">
+
+        <div class="stat-label mb-2">Speak to add a medicine</div>
+        <h5 class="fw-bold mb-4">Tap the mic and describe the medicine</h5>
+
+        <!-- MIC BUTTON -->
+        <div class="mic-wrap mb-4">
+          <button id="mic" class="mic-btn" type="button" aria-label="Start listening">
+            <i class="bi bi-mic-fill"></i>
+          </button>
+          <div class="mic-ring"></div>
+          <div class="mic-ring delay"></div>
+        </div>
+
+        <div id="micStatus" class="text-muted small mb-3">
+          <i class="bi bi-info-circle"></i> Click to start
+        </div>
+
+        <!-- EXAMPLE -->
+        <div class="alert alert-light border small text-start mb-0">
+          <div class="fw-semibold mb-1">
+            <i class="bi bi-lightbulb text-warning"></i> Try saying:
+          </div>
+          <div class="text-muted fst-italic">
+            "Paracetamol 500 milligram, quantity 20, expires 2026-12-31"
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSCRIPT + FORM -->
+  <div class="col-lg-7">
+
+    <!-- TRANSCRIPT -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <span><i class="bi bi-chat-quote text-primary me-2"></i>Transcript</span>
+        <button id="clearTranscript" class="btn btn-sm btn-outline-secondary" type="button">
+          <i class="bi bi-x-lg"></i> Clear
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="transcript" class="transcript-box">
+          <em class="text-muted">Your spoken text will appear here…</em>
+        </div>
+      </div>
     </div>
 
-    <form method="POST" action="{{ url_for('add_medicine') }}" id="voiceForm">
-      <div class="row g-2">
-        <div class="col-md-6"><select name="member_id" class="form-select" required>
-          <option value="">— member —</option>
-          {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
-        </select></div>
-        <div class="col-md-6"><input name="name" id="f_name" class="form-control" placeholder="Medicine name" required></div>
-        <div class="col-md-4"><input name="quantity" id="f_qty" type="number" class="form-control" placeholder="Quantity"></div>
-        <div class="col-md-4"><input name="unit" class="form-control" value="tablets"></div>
-        <div class="col-md-4"><input name="expiry_date" id="f_exp" type="date" class="form-control"></div>
+    <!-- EXTRACTED FORM -->
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-pencil-square text-primary me-2"></i>Confirm Details</span>
+        <small class="text-muted">Review before saving</small>
       </div>
-      <button class="btn btn-primary mt-3">Save</button>
-    </form>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('add_medicine') }}" id="voiceForm">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Family Member *</label>
+              <select name="member_id" class="form-select" required>
+                <option value="">— select member —</option>
+                {% for m in members %}
+                  <option value="{{ m.id }}">{{ m.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Medicine Name *</label>
+              <input name="name" id="f_name" class="form-control" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Generic Name</label>
+              <input name="generic_name" id="f_generic" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Dosage</label>
+              <input name="dosage" id="f_dosage" class="form-control" placeholder="e.g. 500mg">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Quantity</label>
+              <input name="quantity" id="f_qty" type="number" min="0" value="0" class="form-control">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Unit</label>
+              <input name="unit" class="form-control" value="tablets">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Expiry Date</label>
+              <input name="expiry_date" id="f_exp" type="date" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Daily Usage</label>
+              <input name="daily_usage" id="f_daily" type="number" step="0.1" value="1.0" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Minimum Stock</label>
+              <input name="minimum_stock" type="number" value="5" class="form-control">
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary flex-grow-1">
+              <i class="bi bi-check2-circle"></i> Save Medicine
+            </button>
+            <a href="{{ url_for('medicines') }}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<script>
-const mic = document.getElementById('mic');
-const transcript = document.getElementById('transcript');
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+{% endblock %}
 
-if (!SR) {
-  mic.disabled = true;
-  mic.textContent = '⚠ Speech recognition not supported in this browser';
-} else {
+
+{% block scripts %}
+<style>
+  .mic-wrap {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto;
+  }
+
+  .mic-btn {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #0f766e, #0b4f4a);
+    color: #fff;
+    font-size: 2.2rem;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 12px 30px -8px rgba(15,118,110,.5);
+    transition: transform .15s ease, box-shadow .15s ease, background .2s ease;
+    position: relative;
+    z-index: 2;
+  }
+
+  .mic-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 16px 36px -8px rgba(15,118,110,.6);
+  }
+
+  .mic-btn:active { transform: scale(0.97); }
+
+  .mic-btn.listening {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    box-shadow: 0 12px 30px -8px rgba(220,38,38,.6);
+    animation: pulseBtn 1.4s ease-in-out infinite;
+  }
+
+  .mic-btn:disabled {
+    background: #cbd5e1;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  @keyframes pulseBtn {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.06); }
+  }
+
+  .mic-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(15,118,110,.4);
+    animation: ringPulse 2s ease-out infinite;
+    opacity: 0;
+  }
+
+  .mic-ring.delay { animation-delay: 1s; }
+
+  @keyframes ringPulse {
+    0%   { transform: scale(0.7); opacity: 0; }
+    40%  { opacity: .6; }
+    100% { transform: scale(1.35); opacity: 0; }
+  }
+
+  /* Only animate rings while listening */
+  .mic-wrap:not(.active) .mic-ring { animation: none; opacity: 0; }
+
+  .transcript-box {
+    min-height: 70px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .transcript-box strong { color: #0f766e; }
+</style>
+
+<script>
+(function () {
+  const mic        = document.getElementById('mic');
+  const micWrap    = document.querySelector('.mic-wrap');
+  const micStatus  = document.getElementById('micStatus');
+  const transcript = document.getElementById('transcript');
+  const clearBtn   = document.getElementById('clearTranscript');
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SR) {
+    mic.disabled = true;
+    mic.innerHTML = '<i class="bi bi-mic-mute-fill"></i>';
+    micStatus.innerHTML =
+      '<span class="text-danger"><i class="bi bi-x-circle"></i> Speech recognition not supported in this browser. Use Chrome or Edge.</span>';
+    return;
+  }
+
   const rec = new SR();
   rec.lang = 'en-IN';
   rec.interimResults = false;
+  rec.continuous = false;
 
-  mic.onclick = () => { rec.start(); mic.textContent = '🎙 Listening…'; };
-  rec.onend = () => { mic.textContent = '🎤 Start Listening'; };
+  let listening = false;
+
+  mic.addEventListener('click', () => {
+    if (listening) {
+      rec.stop();
+    } else {
+      try { rec.start(); }
+      catch (e) { console.warn(e); }
+    }
+  });
+
+  rec.onstart = () => {
+    listening = true;
+    mic.classList.add('listening');
+    micWrap.classList.add('active');
+    mic.innerHTML = '<i class="bi bi-stop-fill"></i>';
+    micStatus.innerHTML =
+      '<span class="text-danger fw-semibold"><i class="bi bi-record-circle"></i> Listening…</span>';
+  };
+
+  rec.onend = () => {
+    listening = false;
+    mic.classList.remove('listening');
+    micWrap.classList.remove('active');
+    mic.innerHTML = '<i class="bi bi-mic-fill"></i>';
+    micStatus.innerHTML = '<i class="bi bi-check2-circle text-success"></i> Done — review below';
+  };
+
+  rec.onerror = (e) => {
+    micStatus.innerHTML =
+      `<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Error: ${e.error}</span>`;
+  };
 
   rec.onresult = (e) => {
     const text = e.results[0][0].transcript;
-    transcript.innerHTML = '<strong>' + text + '</strong>';
+    transcript.innerHTML = '<strong>' + escapeHtml(text) + '</strong>';
     parseAndFill(text);
   };
-}
 
-function parseAndFill(text) {
-  const t = text.toLowerCase();
-  // quantity
-  const qm = t.match(/quantity\s+(\d+)/) || t.match(/(\d+)\s+(tablets|capsules)/);
-  if (qm) document.getElementById('f_qty').value = qm[1];
-  // expiry
-  const em = t.match(/expir\w*\s+(\d{4})-(\d{2})-(\d{2})/) ||
-             t.match(/expir\w*\s+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  if (em) {
-    if (em[1].length === 4) document.getElementById('f_exp').value = `${em[1]}-${em[2]}-${em[3]}`;
-    else document.getElementById('f_exp').value = `${em[3]}-${em[2].padStart(2,'0')}-${em[1].padStart(2,'0')}`;
+  clearBtn.addEventListener('click', () => {
+    transcript.innerHTML = '<em class="text-muted">Your spoken text will appear here…</em>';
+    ['f_name','f_generic','f_dosage','f_qty','f_exp','f_daily'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.tagName !== 'SELECT') el.value = '';
+    });
+  });
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
   }
-  // name — first word/phrase before "quantity" or digits
-  const nm = t.match(/^([a-z\s]+?)(?=\s+\d|\s+quantity|\s+expir)/);
-  if (nm) document.getElementById('f_name').value = nm[1].trim().replace(/\b\w/g, c => c.toUpperCase());
-}
+
+  function parseAndFill(text) {
+    const t = text.toLowerCase();
+
+    // Quantity
+    const qm = t.match(/quantity\s+(\d+)/) || t.match(/(\d+)\s+(tablets|capsules|pills)/);
+    if (qm) document.getElementById('f_qty').value = qm[1];
+
+    // Dosage (e.g. 500 mg, 5mg)
+    const dm = t.match(/(\d+\s*(?:mg|ml|mcg|g))/);
+    if (dm) document.getElementById('f_dosage').value = dm[1].replace(/\s+/g, '');
+
+    // Expiry — ISO or DD/MM/YYYY
+    const iso = t.match(/expir\w*\s+(\d{4})-(\d{2})-(\d{2})/);
+    const dmy = t.match(/expir\w*\s+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (iso) {
+      document.getElementById('f_exp').value = `${iso[1]}-${iso[2]}-${iso[3]}`;
+    } else if (dmy) {
+      const d = dmy[1].padStart(2,'0');
+      const m = dmy[2].padStart(2,'0');
+      document.getElementById('f_exp').value = `${dmy[3]}-${m}-${d}`;
+    }
+
+    // Daily usage
+    const um = t.match(/(?:daily|once|twice)\s+(\d+(?:\.\d+)?)/);
+    if (um) document.getElementById('f_daily').value = um[1];
+
+    // Medicine name — first phrase before a number or keyword
+    const nm = t.match(/^([a-z][a-z\s\-]+?)(?=\s+\d|\s+quantity|\s+expir|\s+milligram|\s+mg)/);
+    if (nm) {
+      document.getElementById('f_name').value = nm[1]
+        .trim()
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
+  }
+})();
 </script>
 {% endblock %}

@@ -1,46 +1,129 @@
 {% extends 'base.html' %}
-{% block content %}
-<h2 class="mb-4">Family Members</h2>
+{% block title %}Family Members · Remediscent{% endblock %}
+{% block page_title %}Family Members{% endblock %}
 
+{% block topbar_actions %}
+  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+    <i class="bi bi-person-plus"></i> Add Member
+  </button>
+{% endblock %}
+
+{% block content %}
+
+{% if members %}
+
+<!-- MEMBER CARDS GRID -->
 <div class="row g-4">
-  <div class="col-md-5">
-    <div class="card shadow-sm">
-      <div class="card-header"><strong>Add Member</strong></div>
-      <div class="card-body">
-        <form method="POST">
-          <div class="mb-2"><input name="name" class="form-control" placeholder="Name" required></div>
-          <div class="mb-2"><input name="relationship" class="form-control" placeholder="Relationship (e.g. Mother)"></div>
-          <div class="mb-3"><input name="age" type="number" class="form-control" placeholder="Age"></div>
-          <button class="btn btn-primary w-100">Add</button>
-        </form>
+  {% for m in members %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="stat-icon blue" style="font-size: 1.6rem; font-weight: 700;">
+              {{ m.name[0]|upper }}
+            </div>
+            <div class="flex-grow-1">
+              <h5 class="mb-0 fw-bold">{{ m.name }}</h5>
+              <small class="text-muted">
+                {{ m.relationship or 'Member' }}
+                {% if m.age %} · {{ m.age }} yrs{% endif %}
+              </small>
+            </div>
+          </div>
+
+          <div class="row text-center g-2 mb-3">
+            <div class="col-6">
+              <div class="border rounded p-2">
+                <div class="stat-label">Medicines</div>
+                <div class="fw-bold">{{ m.medicines|length }}</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="border rounded p-2">
+                <div class="stat-label">Allergies</div>
+                <div class="fw-bold {% if m.allergies %}text-danger{% endif %}">
+                  {{ m.allergies|length }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {% if m.allergies %}
+            <div class="small mb-3">
+              <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+              {% for a in m.allergies[:2] %}
+                <span class="badge bg-warning me-1">{{ a.allergen }}</span>
+              {% endfor %}
+              {% if m.allergies|length > 2 %}
+                <span class="text-muted">+{{ m.allergies|length - 2 }} more</span>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('member_allergies', mid=m.id) }}"
+               class="btn btn-outline-warning btn-sm flex-grow-1">
+              <i class="bi bi-shield-exclamation"></i> Allergies
+            </a>
+            <form method="POST" action="{{ url_for('delete_member', mid=m.id) }}"
+                  onsubmit="return confirm('Delete member and all their medicines?')">
+              <button class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  {% endfor %}
+</div>
 
-  <div class="col-md-7">
-    <div class="card shadow-sm">
-      <div class="card-header"><strong>Members</strong></div>
-      <table class="table mb-0">
-        <thead><tr><th>Name</th><th>Relationship</th><th>Age</th><th></th></tr></thead>
-        <tbody>
-        {% for m in members %}
-          <tr>
-            <td>{{ m.name }}</td>
-            <td>{{ m.relationship or '—' }}</td>
-            <td>{{ m.age or '—' }}</td>
-            <td class="text-end">
-              <form method="POST" action="{{ url_for('delete_member', mid=m.id) }}"
-                    onsubmit="return confirm('Delete member and all their medicines?')">
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
-          </tr>
-        {% else %}
-          <tr><td colspan="4" class="text-center text-muted py-3">No members yet.</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
+{% else %}
+
+<!-- EMPTY STATE -->
+<div class="card">
+  <div class="empty-state">
+    <i class="bi bi-people"></i>
+    <h5 class="mb-1">No family members yet</h5>
+    <p class="text-muted mb-3">Add members to track medicines and allergies per person.</p>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+      <i class="bi bi-person-plus"></i> Add First Member
+    </button>
+  </div>
+</div>
+
+{% endif %}
+
+<!-- ADD MEMBER MODAL -->
+<div class="modal fade" id="addMemberModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Add Family Member</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Name *</label>
+            <input name="name" class="form-control" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Relationship</label>
+            <input name="relationship" class="form-control" placeholder="e.g. Mother, Father, Self">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Age</label>
+            <input name="age" type="number" class="form-control" min="0" max="120">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary"><i class="bi bi-check2"></i> Add Member</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
+
 {% endblock %}
