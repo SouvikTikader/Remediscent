@@ -13,6 +13,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    abha_id = db.Column(db.String(20), nullable=True)  # ABHA-ready
 
     members = db.relationship('FamilyMember', backref='user',
                               cascade='all, delete-orphan')
@@ -33,6 +34,8 @@ class FamilyMember(db.Model):
     age = db.Column(db.Integer)
 
     medicines = db.relationship('Medicine', backref='member',
+                                cascade='all, delete-orphan')
+    allergies = db.relationship('Allergy', backref='member',
                                 cascade='all, delete-orphan')
 
 
@@ -113,4 +116,38 @@ class Prediction(db.Model):
     model_name = db.Column(db.String(50))
     mae = db.Column(db.Float)
     r2 = db.Column(db.Float)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ==================== NEW TABLES ====================
+
+class DrugInteraction(db.Model):
+    """Knowledge base of drug-drug interactions."""
+    __tablename__ = 'drug_interactions'
+    id = db.Column(db.Integer, primary_key=True)
+    drug_a = db.Column(db.String(120), nullable=False, index=True)
+    drug_b = db.Column(db.String(120), nullable=False, index=True)
+    severity = db.Column(db.String(20), nullable=False)  # HIGH / MODERATE / LOW
+    description = db.Column(db.Text)
+
+
+class Allergy(db.Model):
+    """Per-member allergy record."""
+    __tablename__ = 'allergies'
+    id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey('family_members.id'), nullable=False)
+    allergen = db.Column(db.String(120), nullable=False)  # drug or class
+    severity = db.Column(db.String(20), default='MODERATE')
+    notes = db.Column(db.Text)
+
+
+class AdherenceSnapshot(db.Model):
+    """Cached adherence score per medicine."""
+    __tablename__ = 'adherence_snapshots'
+    id = db.Column(db.Integer, primary_key=True)
+    medicine_id = db.Column(db.Integer, db.ForeignKey('medicines.id'), nullable=False)
+    adherence_rate = db.Column(db.Float)   # 0.0 - 1.0
+    days_tracked = db.Column(db.Integer)
+    expected_doses = db.Column(db.Float)
+    actual_doses = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

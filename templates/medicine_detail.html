@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h2 class="mb-1">{{ med.name }}</h2>
+    <div class="text-muted">{{ med.generic_name or '' }} · {{ med.category or '' }} · {{ med.dosage or '' }}</div>
+    <div class="small">Member: <strong>{{ med.member.name }}</strong></div>
+  </div>
+  <a href="{{ url_for('medicines') }}" class="btn btn-outline-secondary btn-sm">← Back</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <div class="small">Quantity</div><div class="fs-4">{{ med.quantity }} {{ med.unit }}</div>
+  </div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <div class="small">Expiry</div>
+    <div class="fs-6">{{ med.expiry_date or '—' }}</div>
+    <span class="badge
+      {% if med.expiry_status=='EXPIRED' %}bg-danger
+      {% elif med.expiry_status=='EXPIRING SOON' %}bg-warning text-dark
+      {% else %}bg-success{% endif %}">{{ med.expiry_status }}</span>
+  </div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <div class="small">Adherence (30d)</div>
+    <div class="fs-4">{{ ((adherence.rate or 0) * 100) | round(0) }}%</div>
+    <span class="badge bg-info text-dark">{{ adherence.label }}</span>
+  </div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body">
+    <div class="small">Stock Status</div>
+    <div class="fs-6">
+      <span class="badge
+        {% if med.stock_status=='OUT OF STOCK' %}bg-danger
+        {% elif med.stock_status=='LOW STOCK' %}bg-warning text-dark
+        {% else %}bg-success{% endif %}">{{ med.stock_status }}</span>
+    </div>
+  </div></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm border-danger">
+      <div class="card-header bg-danger text-white"><strong>⚠ Drug Interactions</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for i in interactions %}
+          <li class="list-group-item">
+            <span class="badge
+              {% if i.severity=='HIGH' %}bg-danger
+              {% elif i.severity=='MODERATE' %}bg-warning text-dark
+              {% else %}bg-secondary{% endif %}">{{ i.severity }}</span>
+            <strong class="ms-2">{{ i.a }}</strong> + <strong>{{ i.b }}</strong>
+            <div class="small text-muted">{{ i.description }}</div>
+          </li>
+        {% else %}
+          <li class="list-group-item text-success">✓ No interactions with current medicines.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm border-warning">
+      <div class="card-header bg-warning text-dark"><strong>🚨 Allergy Check</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for a in allergies %}
+          <li class="list-group-item">
+            <span class="badge bg-danger">{{ a.severity }}</span>
+            {{ a.allergen }}
+            <div class="small text-muted">{{ a.notes or '' }}</div>
+          </li>
+        {% else %}
+          <li class="list-group-item text-success">✓ No allergy conflicts.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><strong>📉 Consumption Anomalies</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for a in anomalies %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>
+              <span class="badge {% if a.direction=='high' %}bg-danger{% else %}bg-info text-dark{% endif %}">
+                {{ a.direction|upper }}
+              </span>
+              {{ a.date }}
+            </span>
+            <span class="small">qty {{ a.quantity }} · z={{ a.zscore }}</span>
+          </li>
+        {% else %}
+          <li class="list-group-item text-muted">No anomalies detected.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><strong>⚡ Actions</strong></div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('consume_medicine', mid=med.id) }}" class="mb-2">
+          <div class="input-group">
+            <input type="number" name="quantity" value="1" min="1" class="form-control">
+            <button class="btn btn-primary">Record Consumption</button>
+          </div>
+        </form>
+        <form method="POST" action="{{ url_for('predict', mid=med.id) }}">
+          <button class="btn btn-info w-100 mb-2">Predict Reorder</button>
+        </form>
+        <form method="POST" action="{{ url_for('delete_medicine', mid=med.id) }}"
+              onsubmit="return confirm('Delete this medicine?')">
+          <button class="btn btn-outline-danger w-100">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>🎤 Voice-Add Medicine</h2>
+<p class="text-muted">Click the mic and speak, e.g.: <em>"Paracetamol 500 milligram, quantity 20, expires 2026-12-31"</em></p>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <button id="mic" class="btn btn-danger mb-3">🎤 Start Listening</button>
+    <div id="transcript" class="border rounded p-3 bg-light mb-3" style="min-height:60px;">
+      <em class="text-muted">Transcript will appear here…</em>
+    </div>
+
+    <form method="POST" action="{{ url_for('add_medicine') }}" id="voiceForm">
+      <div class="row g-2">
+        <div class="col-md-6"><select name="member_id" class="form-select" required>
+          <option value="">— member —</option>
+          {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+        </select></div>
+        <div class="col-md-6"><input name="name" id="f_name" class="form-control" placeholder="Medicine name" required></div>
+        <div class="col-md-4"><input name="quantity" id="f_qty" type="number" class="form-control" placeholder="Quantity"></div>
+        <div class="col-md-4"><input name="unit" class="form-control" value="tablets"></div>
+        <div class="col-md-4"><input name="expiry_date" id="f_exp" type="date" class="form-control"></div>
+      </div>
+      <button class="btn btn-primary mt-3">Save</button>
+    </form>
+  </div>
+</div>
+
+<script>
+const mic = document.getElementById('mic');
+const transcript = document.getElementById('transcript');
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (!SR) {
+  mic.disabled = true;
+  mic.textContent = '⚠ Speech recognition not supported in this browser';
+} else {
+  const rec = new SR();
+  rec.lang = 'en-IN';
+  rec.interimResults = false;
+
+  mic.onclick = () => { rec.start(); mic.textContent = '🎙 Listening…'; };
+  rec.onend = () => { mic.textContent = '🎤 Start Listening'; };
+
+  rec.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    transcript.innerHTML = '<strong>' + text + '</strong>';
+    parseAndFill(text);
+  };
+}
+
+function parseAndFill(text) {
+  const t = text.toLowerCase();
+  // quantity
+  const qm = t.match(/quantity\s+(\d+)/) || t.match(/(\d+)\s+(tablets|capsules)/);
+  if (qm) document.getElementById('f_qty').value = qm[1];
+  // expiry
+  const em = t.match(/expir\w*\s+(\d{4})-(\d{2})-(\d{2})/) ||
+             t.match(/expir\w*\s+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (em) {
+    if (em[1].length === 4) document.getElementById('f_exp').value = `${em[1]}-${em[2]}-${em[3]}`;
+    else document.getElementById('f_exp').value = `${em[3]}-${em[2].padStart(2,'0')}-${em[1].padStart(2,'0')}`;
+  }
+  // name — first word/phrase before "quantity" or digits
+  const nm = t.match(/^([a-z\s]+?)(?=\s+\d|\s+quantity|\s+expir)/);
+  if (nm) document.getElementById('f_name').value = nm[1].trim().replace(/\b\w/g, c => c.toUpperCase());
+}
+</script>
+{% endblock %}

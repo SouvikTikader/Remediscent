@@ -13,67 +13,118 @@
     <div class="small">Expired</div><div class="fs-3 fw-bold">{{ stats.expired }}</div>
   </div></div></div>
   <div class="col-md-3"><div class="card text-bg-secondary"><div class="card-body">
-    <div class="small">Low / Out of Stock</div><div class="fs-3 fw-bold">{{ stats.low_stock }}</div>
+    <div class="small">Low Stock</div><div class="fs-3 fw-bold">{{ stats.low_stock }}</div>
   </div></div></div>
 </div>
 
 <div class="row g-4">
-  <div class="col-md-7">
+  <!-- Safety findings -->
+  <div class="col-md-6">
+    <div class="card shadow-sm border-danger">
+      <div class="card-header bg-danger text-white">
+        <strong>⚠ Safety Alerts — Drug Interactions</strong>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for f in safety_findings %}
+          <li class="list-group-item">
+            <span class="badge
+              {% if f.severity=='HIGH' %}bg-danger
+              {% elif f.severity=='MODERATE' %}bg-warning text-dark
+              {% else %}bg-secondary{% endif %}">{{ f.severity }}</span>
+            <strong class="ms-2">{{ f.a }}</strong> + <strong>{{ f.b }}</strong>
+            <div class="small text-muted">{{ f.description }}</div>
+            <div class="small">Member: {{ f.member }}</div>
+          </li>
+        {% else %}
+          <li class="list-group-item text-success">✓ No known interactions detected.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Refill optimizer -->
+  <div class="col-md-6">
+    <div class="card shadow-sm border-warning">
+      <div class="card-header bg-warning text-dark">
+        <strong>🛒 Refill Plan (next 14 days)</strong>
+      </div>
+      <div class="card-body">
+        {% if refill.groups %}
+          {% for label, items in refill.groups.items() %}
+            <h6 class="mt-2">{{ label }}</h6>
+            <ul class="list-group mb-2">
+              {% for it in items %}
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>
+                    <span class="badge
+                      {% if it.urgency=='CRITICAL' %}bg-danger
+                      {% elif it.urgency=='HIGH' %}bg-warning text-dark
+                      {% else %}bg-info text-dark{% endif %}">{{ it.urgency }}</span>
+                    {{ it.medicine }} <small class="text-muted">({{ it.member }})</small>
+                  </span>
+                  <span class="small">{{ it.days_left }}d left</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endfor %}
+          <div class="small text-muted">Suggested trips: {{ refill.total_trips }}</div>
+        {% else %}
+          <p class="text-success mb-0">✓ No refills needed in next 14 days.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Adherence -->
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><strong>📊 Adherence (lowest first)</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for a in adherence_rows %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ a.medicine }} <small class="text-muted">({{ a.member }})</small></span>
+            <span>
+              <span class="badge
+                {% if a.label=='Excellent' %}bg-success
+                {% elif a.label=='Good' %}bg-info text-dark
+                {% elif a.label=='Poor' %}bg-warning text-dark
+                {% else %}bg-danger{% endif %}">{{ a.label }}</span>
+              {{ (a.rate * 100) | round(0) }}%
+            </span>
+          </li>
+        {% else %}
+          <li class="list-group-item text-muted">Not enough data yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Medicines quick view -->
+  <div class="col-md-6">
     <div class="card shadow-sm">
       <div class="card-header d-flex justify-content-between">
         <strong>Medicine Status</strong>
         <a href="{{ url_for('medicines') }}" class="small">View all →</a>
       </div>
-      <div class="table-responsive">
-        <table class="table mb-0">
-          <thead><tr><th>Name</th><th>Qty</th><th>Expiry</th><th>Stock</th></tr></thead>
-          <tbody>
-          {% for m in medicines[:8] %}
-            <tr>
-              <td>{{ m.name }}</td>
-              <td>{{ m.quantity }} {{ m.unit }}</td>
-              <td>
-                <span class="badge
-                  {% if m.expiry_status=='EXPIRED' %}bg-danger
-                  {% elif m.expiry_status=='EXPIRING SOON' %}bg-warning text-dark
-                  {% else %}bg-success{% endif %}">
-                  {{ m.expiry_status }}
-                </span>
-              </td>
-              <td>
-                <span class="badge
-                  {% if m.stock_status=='OUT OF STOCK' %}bg-danger
-                  {% elif m.stock_status=='LOW STOCK' %}bg-warning text-dark
-                  {% else %}bg-success{% endif %}">
-                  {{ m.stock_status }}
-                </span>
-              </td>
-            </tr>
-          {% else %}
-            <tr><td colspan="4" class="text-center text-muted py-4">
-              No medicines yet. <a href="{{ url_for('add_medicine') }}">Add one</a>.
-            </td></tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-5">
-    <div class="card shadow-sm">
-      <div class="card-header"><strong>Unread Alerts</strong></div>
-      <ul class="list-group list-group-flush">
-        {% for n in notifications %}
-          <li class="list-group-item">
-            <span class="badge bg-info text-dark me-2">{{ n.type }}</span>
-            {{ n.message }}
-            <div class="small text-muted">{{ n.created_at.strftime('%d %b %Y %H:%M') }}</div>
-          </li>
+      <table class="table mb-0">
+        <thead><tr><th>Name</th><th>Qty</th><th>Expiry</th></tr></thead>
+        <tbody>
+        {% for m in medicines[:6] %}
+          <tr>
+            <td><a href="{{ url_for('medicine_detail', mid=m.id) }}">{{ m.name }}</a></td>
+            <td>{{ m.quantity }} {{ m.unit }}</td>
+            <td><span class="badge
+              {% if m.expiry_status=='EXPIRED' %}bg-danger
+              {% elif m.expiry_status=='EXPIRING SOON' %}bg-warning text-dark
+              {% else %}bg-success{% endif %}">{{ m.expiry_status }}</span></td>
+          </tr>
         {% else %}
-          <li class="list-group-item text-muted">No unread alerts.</li>
+          <tr><td colspan="3" class="text-center text-muted py-4">
+            No medicines. <a href="{{ url_for('add_medicine') }}">Add one</a>.
+          </td></tr>
         {% endfor %}
-      </ul>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Allergies — {{ member.name }}</h2>
+<a href="{{ url_for('members') }}" class="btn btn-sm btn-outline-secondary mb-3">← Members</a>
+
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><strong>Add Allergy</strong></div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="mb-2">
+            <input name="allergen" class="form-control" placeholder="Drug or class (e.g. aspirin)" required>
+          </div>
+          <div class="mb-2">
+            <select name="severity" class="form-select">
+              <option value="LOW">Low</option>
+              <option value="MODERATE" selected>Moderate</option>
+              <option value="HIGH">High</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <textarea name="notes" class="form-control" rows="2" placeholder="Notes (optional)"></textarea>
+          </div>
+          <button class="btn btn-primary w-100">Add</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header"><strong>Recorded Allergies</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for a in allergies %}
+          <li class="list-group-item d-flex justify-content-between">
+            <div>
+              <span class="badge
+                {% if a.severity=='HIGH' %}bg-danger
+                {% elif a.severity=='MODERATE' %}bg-warning text-dark
+                {% else %}bg-secondary{% endif %}">{{ a.severity }}</span>
+              <strong class="ms-2">{{ a.allergen }}</strong>
+              <div class="small text-muted">{{ a.notes or '' }}</div>
+            </div>
+            <form method="POST" action="{{ url_for('delete_allergy', aid=a.id) }}">
+              <button class="btn btn-sm btn-outline-danger">✕</button>
+            </form>
+          </li>
+        {% else %}
+          <li class="list-group-item text-muted">No allergies recorded.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
