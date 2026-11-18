@@ -38,6 +38,7 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        _ensure_schema()
         seed_interactions()
 
     register_routes(app)
@@ -59,21 +60,63 @@ def register_routes(app):
             email = request.form.get('email', '').strip().lower()
             pw = request.form.get('password', '')
             if not (name and email and pw):
-                flash('All fields required', 'error')
+                flash('Name, email and password are required', 'error')
                 return render_template('register.html')
             if User.query.filter_by(email=email).first():
                 flash('Email already registered', 'error')
                 return render_template('register.html')
-            u = User(name=name, email=email)
+
+            u = User(
+                name=name,
+                email=email,
+                age=request.form.get('age', type=int),
+                gender=request.form.get('gender') or None,
+                height_cm=request.form.get('height_cm', type=float),
+                weight_kg=request.form.get('weight_kg', type=float),
+                blood_group=request.form.get('blood_group') or None,
+                phone=request.form.get('phone', '').strip() or None,
+            )
             u.set_password(pw)
             db.session.add(u)
             db.session.flush()
-            db.session.add(FamilyMember(user_id=u.id, name=name, relationship='Self'))
-            db.session.commit()
-            flash('Account created. Please log in.', 'success')
-            return redirect(url_for('login'))
-        return render_template('register.html')
 
+            db.session.add(FamilyMember(
+                user_id=u.id, name=u.name,
+                relationship='Self', age=u.age,
+            ))
+            db.session.commit()
+
+            # Log the new user in directly
+            login_user(u)
+            flash(f'Welcome, {u.name}! Your account is ready.', 'success')
+            return redirect(url_for('dashboard'))
+
+        return render_template('register.html')
+    
+    @app.route('/profile', methods=['GET', 'POST'])
+    @login_required
+    def profile():
+        if request.method == 'POST':
+            current_user.name = request.form.get('name', '').strip() or current_user.name
+            current_user.age = request.form.get('age', type=int)
+            current_user.gender = request.form.get('gender') or None
+            current_user.height_cm = request.form.get('height_cm', type=float)
+            current_user.weight_kg = request.form.get('weight_kg', type=float)
+            current_user.blood_group = request.form.get('blood_group') or None
+            current_user.phone = request.form.get('phone', '').strip() or None
+
+            # keep the "Self" family member in sync
+            self_member = FamilyMember.query.filter_by(
+                user_id=current_user.id, relationship='Self').first()
+            if self_member:
+                self_member.name = current_user.name
+                self_member.age = current_user.age
+
+            db.session.commit()
+            flash('Profile updated', 'success')
+            return redirect(url_for('profile'))
+        return render_template('profile.html')
+    
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if request.method == 'POST':
@@ -436,6 +479,27 @@ def register_cli(app):
                         quantity_used=qty))
         db.session.commit()
         print(' Demo data created. Login: demo@remediscent.app / demo1234')
+def _ensure_schema():
+    """Additive migration so existing SQLite/Postgres DBs get new user columns."""
+    from sqlalchemy import inspect, text
+    insp = inspect(db.engine)
+    if 'users' not in insp.get_table_names():
+        return
+    existing = {c['name'] for c in insp.get_columns('users')}
+    wanted = {
+        'age': 'INTEGER',
+        'gender': 'VARCHAR(20)',
+        'height_cm': 'FLOAT',
+        'weight_kg': 'FLOAT',
+        'blood_group': 'VARCHAR(10)',
+        'phone': 'VARCHAR(20)',
+    }
+    missing = {k: v for k, v in wanted.items() if k not in existing}
+    if not missing:
+        return
+    with db.engine.begin() as conn:
+        for name, ddl in missing.items():
+            conn.execute(text(f'ALTER TABLE users ADD COLUMN {name} {ddl}'))
 
 
 app = create_app()

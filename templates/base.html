@@ -36,6 +36,9 @@
       <a href="{{ url_for('notifications') }}" class="side-link {% if request.endpoint=='notifications' %}active{% endif %}">
         <i class="bi bi-bell"></i> Alerts
       </a>
+      <a href="{{ url_for('profile') }}" class="side-link {% if request.endpoint=='profile' %}active{% endif %}">
+        <i class="bi bi-person-badge"></i> My Profile
+      </a>
     </nav>
 
     <div class="side-footer">
@@ -51,11 +54,18 @@
       </a>
     </div>
   </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
   <!-- MAIN -->
   <main class="main">
     <header class="topbar">
-      <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+      <div class="topbar-left">
+        <button type="button" class="sidebar-toggle"
+                id="sidebarToggle" aria-label="Open menu">
+          <i class="bi bi-list"></i>
+        </button>
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+      </div>
       <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
     </header>
 
@@ -93,6 +103,36 @@
 {% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+  const sidebar  = document.querySelector('.sidebar');
+  const toggle   = document.getElementById('sidebarToggle');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  if (!sidebar || !toggle || !backdrop) return;
+
+  const open = () => {
+    sidebar.classList.add('open');
+    backdrop.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  };
+  const close = () => {
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('show');
+    document.body.style.overflow = '';
+  };
+
+  toggle.addEventListener('click', () =>
+    sidebar.classList.contains('open') ? close() : open()
+  );
+  backdrop.addEventListener('click', close);
+  sidebar.querySelectorAll('.side-link').forEach(a =>
+    a.addEventListener('click', close)
+  );
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 992) close();
+  });
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

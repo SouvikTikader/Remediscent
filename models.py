@@ -15,6 +15,14 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     abha_id = db.Column(db.String(20), nullable=True)  # ABHA-ready
 
+    # ---- personal details (captured at signup / editable in profile) ----
+    age = db.Column(db.Integer)
+    gender = db.Column(db.String(20))
+    height_cm = db.Column(db.Float)
+    weight_kg = db.Column(db.Float)
+    blood_group = db.Column(db.String(10))
+    phone = db.Column(db.String(20))
+
     members = db.relationship('FamilyMember', backref='user',
                               cascade='all, delete-orphan')
 
@@ -24,6 +32,26 @@ class User(UserMixin, db.Model):
     def check_password(self, pw):
         return check_password_hash(self.password_hash, pw)
 
+    # ---- BMI helpers ----
+    @property
+    def bmi(self):
+        if not self.height_cm or not self.weight_kg or self.height_cm <= 0:
+            return None
+        h = self.height_cm / 100.0
+        return round(self.weight_kg / (h * h), 1)
+
+    @property
+    def bmi_category(self):
+        b = self.bmi
+        if b is None:
+            return 'Human or not?'
+        if b < 18.5:
+            return 'Stick'
+        if b < 25:
+            return 'NPC'
+        if b < 30:
+            return 'Chubby'
+        return 'Meet God soon'
 
 class FamilyMember(db.Model):
     __tablename__ = 'family_members'

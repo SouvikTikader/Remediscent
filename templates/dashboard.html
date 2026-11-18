@@ -40,6 +40,23 @@
       <div class="stat-value">{{ stats.low_stock }}</div>
     </div>
   </div>
+  <div class="stat-card">
+    <div class="stat-icon
+      {% if current_user.bmi_category == 'Normal' %}green
+      {% elif current_user.bmi_category in ['Underweight','Overweight'] %}amber
+      {% elif current_user.bmi_category == 'Obese' %}red
+      {% else %}slate{% endif %}">
+      <i class="bi bi-heart-pulse"></i>
+    </div>
+    <div>
+      <div class="stat-label">Your BMI</div>
+      <div class="stat-value">{{ current_user.bmi if current_user.bmi is not none else '—' }}</div>
+      <small class="text-muted">
+        {{ current_user.bmi_category }}
+        · <a href="{{ url_for('profile') }}" class="text-decoration-none">Edit</a>
+      </small>
+    </div>
+  </div>
 </div>
 
 <div class="row g-4">
@@ -154,25 +171,27 @@
         <span><i class="bi bi-capsule text-primary me-2"></i>Medicine Status</span>
         <a href="{{ url_for('medicines') }}" class="small text-decoration-none">View all →</a>
       </div>
-      <table class="table">
-        <thead><tr><th>Name</th><th>Qty</th><th>Expiry</th></tr></thead>
-        <tbody>
-        {% for m in medicines[:6] %}
-          <tr>
-            <td><a href="{{ url_for('medicine_detail', mid=m.id) }}" class="text-decoration-none fw-semibold">{{ m.name }}</a></td>
-            <td>{{ m.quantity }} {{ m.unit }}</td>
-            <td><span class="badge
-              {% if m.expiry_status=='EXPIRED' %}bg-danger
-              {% elif m.expiry_status=='EXPIRING SOON' %}bg-warning
-              {% else %}bg-success{% endif %}">{{ m.expiry_status }}</span></td>
-          </tr>
-        {% else %}
-          <tr><td colspan="3" class="text-center text-muted py-4">
-            No medicines yet. <a href="{{ url_for('add_medicine') }}">Add one</a>
-          </td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="table">
+          <thead><tr><th>Name</th><th>Qty</th><th>Expiry</th></tr></thead>
+          <tbody>
+          {% for m in medicines[:6] %}
+            <tr>
+              <td><a href="{{ url_for('medicine_detail', mid=m.id) }}" class="text-decoration-none fw-semibold">{{ m.name }}</a></td>
+              <td>{{ m.quantity }} {{ m.unit }}</td>
+              <td><span class="badge
+                {% if m.expiry_status=='EXPIRED' %}bg-danger
+                {% elif m.expiry_status=='EXPIRING SOON' %}bg-warning
+                {% else %}bg-success{% endif %}">{{ m.expiry_status }}</span></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-4">
+              No medicines yet. <a href="{{ url_for('add_medicine') }}">Add one</a>
+            </td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
